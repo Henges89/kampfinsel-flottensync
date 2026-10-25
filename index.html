@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flottensync – Kampfinsel</title>
+<style>
+:root{
+  --bg:#f3f1ea; --card:#ffffff; --ink:#1d2a33; --muted:#66727b; --line:#dcd8cb;
+  --accent:#0f6b7a; --accent-ink:#ffffff; --accent-soft:#dff0f2;
+  --ok:#2b7a4b; --warn:#b4531a; --bad:#b3261e; --bar:#0f6b7a; --bar-bg:#e8e5d9;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#10181d; --card:#18232a; --ink:#e6edf0; --muted:#93a3ad; --line:#2a3943;
+    --accent:#4cb8c8; --accent-ink:#06242a; --accent-soft:#1b3a41;
+    --ok:#6cc58d; --warn:#f0a066; --bad:#f2837c; --bar:#4cb8c8; --bar-bg:#233039;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+.lead{color:var(--muted);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 12px;
+  display:flex;align-items:center;gap:8px}
+.step{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;
+  background:var(--accent);color:var(--accent-ink);font-size:12px;letter-spacing:0}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+input,select,button{font:inherit;color:inherit}
+input[type=text],input[type=number],select{
+  width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);min-height:42px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input.bad{border-color:var(--bad)}
+.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.row{display:grid;gap:12px}
+.fleet{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--bg)}
+.fleet-top{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:10px}
+.fleet-top input{font-weight:600;background:transparent;border-color:transparent;padding-left:4px}
+.fleet-top input:hover,.fleet-top input:focus{border-color:var(--line);background:var(--card)}
+.fleet-grid{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+@media (max-width:560px){.fleet-grid{grid-template-columns:1fr}}
+.offset{margin-top:10px}
+.info{font-size:13px;color:var(--muted);margin-top:8px;min-height:19px}
+.info b{color:var(--ink)}
+.err{color:var(--bad);font-size:12.5px;margin-top:3px;min-height:0}
+.btn{border:1px solid var(--line);background:var(--card);padding:9px 14px;border-radius:9px;cursor:pointer;min-height:42px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn.small{padding:4px 10px;min-height:32px;font-size:13px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg label{margin:0;cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg span{display:block;padding:9px 14px;font-size:14px;color:var(--ink);border-right:1px solid var(--line);min-height:42px;line-height:24px}
+.seg label:last-child span{border-right:0}
+.seg input:checked+span{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:-2px}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+.opts{display:grid;gap:14px}
+.plan-item{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.plan-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.plan-name{font-weight:700}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.tag.warn{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.big{font-size:22px;font-weight:700}
+.plan-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px}
+@media (max-width:560px){.plan-cols{grid-template-columns:1fr 1fr}}
+.plan-cols div small{display:block;color:var(--muted);font-size:12px}
+.bar{height:8px;border-radius:99px;background:var(--bar-bg);margin-top:10px;position:relative;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;background:var(--bar);border-radius:99px;opacity:.9}
+.bar i.wait{background:repeating-linear-gradient(90deg,var(--line) 0 4px,transparent 4px 8px);opacity:1}
+.summary{background:var(--accent-soft);border-radius:10px;padding:12px;margin-bottom:12px}
+.late{color:var(--bad);font-weight:600}
+.cd{font-weight:700}
+.empty{color:var(--muted);text-align:center;padding:18px 8px}
+details summary{cursor:pointer;color:var(--muted);font-size:14px}
+details[open] summary{margin-bottom:10px}
+.speeds{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.speeds div{display:flex;align-items:center;gap:8px}
+.speeds span{flex:1;font-size:14px}
+.speeds input{width:84px;text-align:right}
+footer{color:var(--muted);font-size:12.5px;margin-top:22px}
+footer code{background:var(--card);padding:1px 5px;border-radius:5px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Flottensync</h1>
+  <p class="lead">Mehrere Flotten – von verschiedenen Inseln, mit verschiedenen Schiffen – treffen zur selben Sekunde – oder mit festem Zeitabstand – am Ziel ein.</p>
+
+  <section class="card">
+    <h2><span class="step">1</span>Ziel</h2>
+    <div class="row" style="grid-template-columns:minmax(0,260px)">
+      <div>
+        <label for="target">Zielkoordinaten (Ozean:Gitter:Insel)</label>
+        <input type="text" id="target" inputmode="text" autocomplete="off" placeholder="z. B. 23:8:14">
+        <div class="err" id="targetErr"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step">2</span>Flotten</h2>
+    <div id="fleets"></div>
+    <div class="btns">
+      <button class="btn" id="addFleet">+ Flotte hinzufügen</button>
+    </div>
+    <details style="margin-top:14px" id="speedDetails">
+      <summary>Meine Schiffsgeschwindigkeiten (sm/h) anpassen</summary>
+      <p class="hint" style="margin-top:0">Die Geschwindigkeit hängt von deinem Hafen und deiner Segel-Forschung ab. Du findest deine
+        Werte auf der Flottenseite im Spiel (Schiffstabelle, Spalte „Geschwindigkeit“). Handelsschiffe sind auf Handelsmissionen langsamer
+        („im Handel“) – dafür gibt es eigene Einträge. Die Werte werden in diesem Browser gespeichert.</p>
+      <div class="speeds" id="speeds"></div>
+      <div class="btns" style="margin-top:10px"><button class="btn small" id="resetSpeeds">Standardwerte</button></div>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2><span class="step">3</span>Ankunft &amp; Methode</h2>
+    <div class="opts">
+      <div>
+        <label>Wann sollen alle ankommen?</label>
+        <div class="seg" role="radiogroup" aria-label="Ankunftsmodus">
+          <label><input type="radio" name="mode" value="earliest"><span>So früh wie möglich</span></label>
+          <label><input type="radio" name="mode" value="in"><span>In …</span></label>
+          <label><input type="radio" name="mode" value="at"><span>Um Uhrzeit</span></label>
+        </div>
+        <div id="modeIn" style="display:none;margin-top:10px;max-width:220px">
+          <label for="inVal">Ankunft in (hh:mm:ss)</label>
+          <input type="text" id="inVal" inputmode="numeric" placeholder="01:30:00" autocomplete="off">
+        </div>
+        <div id="modeAt" style="display:none;margin-top:10px;max-width:220px">
+          <label for="atVal">Ankunft um (hh:mm:ss, deine Ortszeit)</label>
+          <input type="text" id="atVal" inputmode="numeric" placeholder="21:30:00" autocomplete="off">
+        </div>
+        <div class="err" id="modeErr"></div>
+      </div>
+      <div>
+        <label>Wie sollen die Flotten synchronisiert werden?</label>
+        <div class="seg" role="radiogroup" aria-label="Methode">
+          <label><input type="radio" name="method" value="throttle"><span>Drosseln</span></label>
+          <label><input type="radio" name="method" value="delay"><span>Startzeiten staffeln</span></label>
+        </div>
+        <p class="hint" id="methodHint"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-live="polite">
+    <h2><span class="step">4</span>Startplan</h2>
+    <div id="plan"></div>
+  </section>
+
+  <footer>
+    Entfernung: alle Ozeane liegen auf einer gemeinsamen Ebene –
+    <code>X = 2·(Gitter + 10·Reihe)</code>, <code>Y = 0,4·(Insel + 50·Spalte)</code>, Entfernung = √(ΔX² + ΔY²)
+    (Ozeannummer = Reihe·10 + Spalte). Geprüft an über 680 Spiel-Entfernungen und Flugzeiten (max. Abweichung 0,05 sm);
+    Reisezeit = Entfernung ÷ Geschwindigkeit. Gedrosselte Flüge nehmen eine zur Geschwindigkeit umgekehrt proportionale
+    Dauer an (Regler im Spiel: 50–100 %). Zeitangaben nach deiner lokalen Uhr – prüfe vor dem Absenden die Laufzeit im Spiel.
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+
+/* ---------- Spiel-Mathematik ---------- */
+const VALID_OCEANS=new Set([11,12,13,14,15,16,17,18,19,21,22,23,24,25,26,27,28,29,31,32,33,34,35]);
+function parseCoord(s){
+  const m=/^\s*(\d+)\s*[:\/., -]\s*(\d+)\s*[:\/., -]\s*(\d+)\s*$/.exec(s||"");
+  if(!m)return{err:"Format: Ozean:Gitter:Insel, z. B. 22:5:12"};
+  const o=+m[1],g=+m[2],i=+m[3];
+  if(!VALID_OCEANS.has(o))return{err:"Ozean "+o+" gibt es nicht (11–19, 21–29, 31–35)"};
+  if(g<1||g>10)return{err:"Gitter muss 1–10 sein"};
+  if(i<1||i>25)return{err:"Insel muss 1–25 sein"};
+  return{o,g,i};
+}
+function plane(c){return{x:2*(c.g+10*Math.floor(c.o/10)),y:0.4*(c.i+50*(c.o%10))};}
+function distance(a,b){const p=plane(a),q=plane(b);return Math.hypot(p.x-q.x,p.y-q.y);}
+function parseHMS(s){
+  const m=/^\s*(\d+)(?::(\d{1,2}))?(?::(\d{1,2}))?\s*$/.exec(s||"");
+  if(!m)return null;
+  const a=+m[1],b=m[2]==null?null:+m[2],c=m[3]==null?null:+m[3];
+  if(b==null)return a*60;            // "90" = 90 Minuten
+  if((b!=null&&b>59)||(c!=null&&c>59))return null;
+  return a*3600+b*60+(c||0);
+}
+function parseOffset(s){
+  s=String(s==null?"":s).trim().replace(",",".").replace("−","-");
+  if(s==="")return 0;
+  if(!/^[+-]?\d+(\.\d+)?$/.test(s))return null;
+  return parseFloat(s);
+}
+function fmtDur(sec){
+  sec=Math.max(0,Math.round(sec));
+  const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;
+  return h?h+" h "+m+" min "+s+" s":m?m+" min "+s+" s":s+" s";
+}
+function fmtClock(ms){
+  return new Date(ms).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+function fmtDay(ms,anchor){
+  const a=new Date(anchor),d=new Date(ms);
+  const diff=Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(a.getFullYear(),a.getMonth(),a.getDate()))/864e5);
+  return diff===0?"":diff===1?" (morgen)":" (+"+diff+" Tage)";
+}
+const fmtNum=n=>n.toLocaleString("de-DE",{maximumFractionDigits:2});
+const fmt1=n=>n.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* Kernberechnung: Fleets = [{name, base(sec @100%)}], opts = {mode, Tin, Tat, method} -> Plan */
+function planSync(fleets,opts){
+  const ok=fleets.filter(f=>isFinite(f.base));
+  if(!ok.length)return null;
+  // Versatz (s) relativ zur Hauptankunft T; "früheste" Ankunft: jede Flotte muss base <= T+off schaffen
+  let T=Math.max(...ok.map(f=>f.base-(f.off||0)));
+  if((opts.mode==="in"||opts.mode==="at")&&opts.T!=null)T=opts.T;
+  const rows=fleets.map(f=>{
+    if(!isFinite(f.base))return{...f,status:"missing"};
+    const off=f.off||0,Ti=T+off;
+    if(f.base>Ti+0.5)return{...f,status:"toolate",pct:1,delay:0,dur:f.base,short:f.base-Ti,Ti};
+    let pct=1,delay=Ti-f.base;
+    if(opts.method==="throttle"){
+      pct=Math.min(1,Math.max(0.5,Math.ceil(f.base/Ti*100-1e-9)/100)); // Regler: ganze Prozent, aufrunden
+      delay=Ti-f.base/pct;
+    }
+    return{...f,status:"ok",pct,delay:Math.max(0,delay),dur:f.base/pct,Ti};
+  });
+  return{T,rows};
+}
+
+/* ---------- Zustand ---------- */
+const DEFAULT_SPEEDS={
+  "Spionageschiff":26.9,"Kleines Kriegsschiff":18.0,"Zerstörer":18.0,"Kleines Handelsschiff":15.7,
+  "Großes Kriegsschiff":13.5,"Großes Handelsschiff":11.2,"Kolonisierungsschiff":9.0,
+  "Kleines Handelsschiff (Handel)":14.0,"Großes Handelsschiff (Handel)":10.0
+};
+const KEY="flottensync-v2";
+let S={target:"",fleets:[],speeds:{...DEFAULT_SPEEDS},mode:"earliest",inVal:"01:00:00",atVal:"",method:"throttle"};
+let anchor=Date.now();
+let nextId=1;
+
+function load(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){const o=JSON.parse(raw);
+      S={...S,...o,speeds:{...DEFAULT_SPEEDS,...(o.speeds||{})}};}
+  }catch(e){}
+  if(!Array.isArray(S.fleets)||!S.fleets.length)S.fleets=[newFleet(),newFleet()];
+  S.fleets.forEach(f=>{f.id=nextId++;});
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function newFleet(){return{id:nextId++,name:"",start:"",ship:"Großes Kriegsschiff",custom:12,offset:""};}
+function fleetName(f,i){return f.name.trim()||("Flotte "+(i+1));}
+function fleetSpeed(f){return f.ship==="__custom"?+f.custom:+S.speeds[f.ship];}
+
+/* ---------- Rendering: Flotten-Karten ---------- */
+function shipOptions(sel){
+  return Object.keys(DEFAULT_SPEEDS).map(k=>`<option value="${k}" ${k===sel?"selected":""}>${k} – ${fmt1(+S.speeds[k]||0)}</option>`).join("")
+    +`<option value="__custom" ${sel==="__custom"?"selected":""}>Eigene Geschwindigkeit …</option>`;
+}
+function drawFleets(){
+  const box=$("fleets");box.innerHTML="";
+  S.fleets.forEach((f,i)=>{
+    const d=document.createElement("div");d.className="fleet";d.dataset.id=f.id;
+    d.innerHTML=`
+      <div class="fleet-top">
+        <input type="text" data-k="name" value="${esc(f.name)}" placeholder="Flotte ${i+1}" aria-label="Name der Flotte ${i+1}">
+        <div class="btns">
+          <button class="btn small ghost" data-act="dup" title="Duplizieren">Kopie</button>
+          <button class="btn small ghost" data-act="del" title="Entfernen" aria-label="Flotte entfernen">✕</button>
+        </div>
+      </div>
+      <div class="fleet-grid">
+        <div>
+          <label>Startinsel</label>
+          <input type="text" data-k="start" value="${esc(f.start)}" placeholder="z. B. 22:5:12" autocomplete="off">
+          <div class="err" data-role="startErr"></div>
+        </div>
+        <div>
+          <label>Langsamstes Schiff der Flotte</label>
+          <select data-k="ship">${shipOptions(f.ship)}</select>
+          <input type="number" data-k="custom" min="0.1" step="0.1" value="${f.custom}" placeholder="sm/h" style="margin-top:6px;display:${f.ship==="__custom"?"block":"none"}">
+        </div>
+      </div>
+      <div class="offset">
+        <label>Ankunft relativ zu den anderen (Sekunden)</label>
+        <input type="text" data-k="offset" value="${esc(f.offset||"")}" placeholder="0" inputmode="numeric" autocomplete="off" style="max-width:130px">
+        <span class="hint" style="margin-left:8px">−5 = 5 s früher, +5 = 5 s später</span>
+        <div class="err" data-role="offErr"></div>
+      </div>
+      <div class="info" data-role="info"></div>`;
+    box.appendChild(d);
+  });
+  updateFleetInfo();
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+function evalFleets(){
+  const tgt=parseCoord(S.target);
+  return S.fleets.map((f,i)=>{
+    const st=f.start.trim()?parseCoord(f.start):{err:""};
+    const speed=fleetSpeed(f);
+    const off=parseOffset(f.offset);
+    const out={id:f.id,name:fleetName(f,i),startErr:st.err||"",speed,off:off==null?0:off,offErr:off==null?"Zahl in Sekunden, z. B. -5 oder 5":""};
+    if(!tgt.err&&!st.err&&speed>0){
+      out.dist=distance(st,tgt);
+      out.base=out.dist/speed*3600;
+    } else out.base=NaN;
+    return out;
+  });
+}
+function updateFleetInfo(){
+  const tgt=parseCoord(S.target);
+  $("targetErr").textContent=S.target.trim()&&tgt.err?tgt.err:"";
+  $("target").classList.toggle("bad",!!(S.target.trim()&&tgt.err));
+  const ev=evalFleets();
+  document.querySelectorAll(".fleet").forEach(el=>{
+    const e=ev.find(x=>x.id==el.dataset.id);if(!e)return;
+    const startEl=el.querySelector('[data-k="start"]');
+    el.querySelector('[data-role="startErr"]').textContent=e.startErr;
+    startEl.classList.toggle("bad",!!e.startErr);
+    el.querySelector('[data-role="offErr"]').textContent=e.offErr;
+    el.querySelector('[data-k="offset"]').classList.toggle("bad",!!e.offErr);
+    const info=el.querySelector('[data-role="info"]');
+    if(isFinite(e.base))info.innerHTML=`<b>${fmt1(e.dist)} sm</b> · Flugzeit bei 100 %: <b>${fmtDur(e.base)}</b>`
+      +(e.dist===0?" (Start und Ziel sind identisch)":"");
+    else if(!(e.speed>0))info.textContent="Geschwindigkeit eintragen.";
+    else info.textContent=(S.target.trim()&&!tgt.err)?"Startinsel eintragen.":"Zuerst das Ziel eintragen.";
+  });
+}
+
+/* ---------- Rendering: Startplan ---------- */
+let lastPlan=null;
+function currentOpts(){
+  const o={mode:S.mode,method:S.method,T:null,err:""};
+  if(S.mode==="in"){
+    const t=parseHMS(S.inVal);
+    if(t==null||t<=0)o.err="Bitte Dauer als hh:mm:ss angeben.";else o.T=t;
+  } else if(S.mode==="at"){
+    const t=parseHMS(S.atVal);
+    if(S.atVal.trim()===""||t==null||t>=86400)o.err="Bitte Uhrzeit als hh:mm:ss angeben.";
+    else{
+      const d=new Date(anchor);d.setHours(0,0,0,0);
+      let ms=d.getTime()+t*1000;
+      if(ms<=anchor)ms+=864e5;
+      o.T=(ms-anchor)/1000;
+    }
+  }
+  return o;
+}
+function drawPlan(){
+  const el=$("plan");
+  const ev=evalFleets();
+  const opts=currentOpts();
+  $("modeErr").textContent=opts.err;
+  $("inVal").classList.toggle("bad",S.mode==="in"&&!!opts.err);
+  $("atVal").classList.toggle("bad",S.mode==="at"&&!!opts.err);
+  lastPlan=null;
+  const valid=ev.filter(e=>isFinite(e.base));
+  if(!valid.length){el.innerHTML='<div class="empty">Trage ein Ziel und mindestens eine Flotte (Startinsel + Schiff) ein – der Plan erscheint hier.</div>';return;}
+  if(opts.err){el.innerHTML='<div class="empty">'+esc(opts.err)+'</div>';return;}
+  const plan=planSync(ev,opts);
+  lastPlan=plan;
+  const arrive=anchor+plan.T*1000;
+  const maxWait=Math.max(...plan.rows.filter(r=>r.status==="ok").map(r=>r.delay+r.dur),plan.T);
+  const anyLate=plan.rows.some(r=>r.status==="toolate");
+  let html=`<div class="summary">Hauptankunft um <span class="big mono">${fmtClock(arrive)}</span>${fmtDay(arrive,anchor)} an
+    <span style="color:var(--muted)">(in ${fmtDur(plan.T)})</span>${plan.rows.some(r=>r.off)?" – Flotten mit Versatz weichen davon ab.":"."}
+    <div class="hint" style="margin-top:4px">Berechnet um ${fmtClock(anchor)}. Ändert sich die Uhrzeit, drücke „Neu berechnen“.</div></div>`;
+  plan.rows.forEach(r=>{
+    if(r.status==="missing"){
+      html+=`<div class="plan-item"><div class="plan-head"><span class="plan-name">${esc(r.name)}</span><span class="tag warn">unvollständig</span></div>
+        <div class="hint">Startinsel oder Geschwindigkeit fehlt – wird im Plan nicht berücksichtigt.</div></div>`;return;
+    }
+    if(r.status==="toolate"){
+      html+=`<div class="plan-item"><div class="plan-head"><span class="plan-name">${esc(r.name)}</span><span class="tag warn">schafft es nicht</span></div>
+        <div class="hint late">Selbst mit 100 % braucht diese Flotte ${fmtDur(r.base)} – das sind ${fmtDur(r.short)} zu viel für die gewählte Ankunft.</div></div>`;return;
+    }
+    const launch=anchor+r.delay*1000;
+    const delayPct=r.delay/maxWait*100,durPct=r.dur/maxWait*100;
+    const throttled=r.pct<0.9999;
+    html+=`<div class="plan-item" data-launch="${launch}">
+      <div class="plan-head"><span class="plan-name">${esc(r.name)}</span>
+        <span class="tag">${throttled?"gedrosselt auf "+Math.round(r.pct*100)+" %":"volle Fahrt (100 %)"}</span></div>
+      <div class="plan-cols">
+        <div><small>Absenden um</small><span class="big mono">${fmtClock(launch)}</span></div>
+        <div><small>Countdown</small><span class="big mono cd" data-cd></span></div>
+        <div><small>Flugzeit</small><span class="big mono">${fmtDur(r.dur)}</span></div>
+        <div><small>Ankunft</small><span class="big mono">${fmtClock(anchor+r.Ti*1000)}</span>${r.off?`<small>${r.off>0?"+":""}${fmtNum(r.off)} s zur Hauptankunft</small>`:""}</div>
+      </div>
+      <div class="bar" aria-hidden="true">
+        ${delayPct>0.3?`<i class="wait" style="left:0;width:${delayPct}%"></i>`:""}
+        <i style="left:${delayPct}%;width:${Math.max(durPct,1)}%"></i></div>
+    </div>`;
+  });
+  html+=`<div class="btns"><button class="btn primary" id="recalc">Neu berechnen</button><button class="btn" id="copy">Plan kopieren</button></div>`;
+  if(anyLate)html+=`<p class="hint late">Mindestens eine Flotte erreicht die gewählte Ankunft nicht. Wähle „So früh wie möglich“ oder eine spätere Zeit.</p>`;
+  el.innerHTML=html;
+  $("recalc").onclick=()=>{anchor=Date.now();drawPlan();tick();};
+  $("copy").onclick=copyPlan;
+  tick();
+}
+function tick(){
+  const now=Date.now();
+  document.querySelectorAll("[data-launch]").forEach(it=>{
+    const t=+it.dataset.launch-now;
+    const cd=it.querySelector("[data-cd]");
+    if(t>999){cd.textContent="in "+fmtDur(t/1000);cd.classList.remove("late");}
+    else if(t>-5000){cd.textContent="JETZT!";cd.classList.remove("late");}
+    else{cd.textContent="verpasst";cd.classList.add("late");}
+  });
+}
+function copyPlan(){
+  if(!lastPlan)return;
+  const arrive=anchor+lastPlan.T*1000;
+  const lines=["Flottensync → "+S.target.trim()+" · Hauptankunft "+fmtClock(arrive)+fmtDay(arrive,anchor)];
+  lastPlan.rows.forEach(r=>{
+    if(r.status!=="ok")return;
+    lines.push("• "+r.name+" (Ankunft "+fmtClock(anchor+r.Ti*1000)+"): absenden "+fmtClock(anchor+r.delay*1000)+" mit "+Math.round(r.pct*100)+" % (Flug "+fmtDur(r.dur)+")");
+  });
+  const txt=lines.join("\n");
+  const b=$("copy");
+  (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>{b.textContent="Kopiert ✓";},()=>{window.prompt("Plan kopieren:",txt);});
+  setTimeout(()=>{if(b)b.textContent="Plan kopieren";},1800);
+}
+
+/* ---------- Geschwindigkeits-Einstellungen ---------- */
+function drawSpeeds(){
+  const box=$("speeds");box.innerHTML="";
+  Object.keys(DEFAULT_SPEEDS).forEach(k=>{
+    const d=document.createElement("div");
+    d.innerHTML=`<span>${k}</span><input type="number" min="0.1" step="0.1" data-ship="${k}" value="${S.speeds[k]}" aria-label="Geschwindigkeit ${k}">`;
+    box.appendChild(d);
+  });
+}
+
+/* ---------- Events ---------- */
+function refreshAll(rebuildFleets){
+  anchor=Date.now();
+  save();
+  if(rebuildFleets)drawFleets();else updateFleetInfo();
+  drawPlan();
+}
+$("target").addEventListener("input",e=>{S.target=e.target.value;refreshAll(false);});
+$("fleets").addEventListener("input",e=>{
+  const card=e.target.closest(".fleet");if(!card)return;
+  const f=S.fleets.find(x=>x.id==card.dataset.id),k=e.target.dataset.k;
+  if(!f||!k)return;
+  if(k==="custom")f.custom=parseFloat(e.target.value)||0;
+  else f[k]=e.target.value;
+  if(k==="ship"){drawFleetsKeepFocus(card,e.target);}
+  refreshAll(false);
+});
+function drawFleetsKeepFocus(card){card.querySelector('[data-k="custom"]').style.display=
+  S.fleets.find(x=>x.id==card.dataset.id).ship==="__custom"?"block":"none";}
+$("fleets").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-act]");if(!b)return;
+  const idx=S.fleets.findIndex(x=>x.id==b.closest(".fleet").dataset.id);
+  if(b.dataset.act==="del")S.fleets.splice(idx,1);
+  else S.fleets.splice(idx+1,0,{...S.fleets[idx],id:nextId++,name:S.fleets[idx].name?S.fleets[idx].name+" 2":""});
+  refreshAll(true);
+});
+$("addFleet").onclick=()=>{S.fleets.push(newFleet());refreshAll(true);
+  const last=document.querySelector(".fleet:last-child [data-k=start]");if(last)last.focus();};
+$("speeds").addEventListener("input",e=>{
+  const k=e.target.dataset.ship;if(!k)return;
+  S.speeds[k]=parseFloat(e.target.value)||0;
+  document.querySelectorAll('select[data-k="ship"]').forEach(sel=>{
+    [...sel.options].forEach(o=>{if(S.speeds[o.value]!=null)o.textContent=o.value+" – "+fmt1(+S.speeds[o.value]||0);});
+  });
+  refreshAll(false);
+});
+$("resetSpeeds").onclick=()=>{S.speeds={...DEFAULT_SPEEDS};drawSpeeds();refreshAll(true);};
+document.querySelectorAll('input[name="mode"]').forEach(r=>r.addEventListener("change",()=>{S.mode=r.value;syncModeUI();refreshAll(false);}));
+document.querySelectorAll('input[name="method"]').forEach(r=>r.addEventListener("change",()=>{S.method=r.value;syncModeUI();refreshAll(false);}));
+$("inVal").addEventListener("input",e=>{S.inVal=e.target.value;refreshAll(false);});
+$("atVal").addEventListener("input",e=>{S.atVal=e.target.value;refreshAll(false);});
+function syncModeUI(){
+  document.querySelector(`input[name="mode"][value="${S.mode}"]`).checked=true;
+  document.querySelector(`input[name="method"][value="${S.method}"]`).checked=true;
+  $("modeIn").style.display=S.mode==="in"?"":"none";
+  $("modeAt").style.display=S.mode==="at"?"":"none";
+  $("methodHint").textContent=S.method==="throttle"
+    ?"Alle Flotten starten (fast) sofort; schnellere Flotten werden im Spiel am Geschwindigkeitsregler (50–100 %) gebremst, bis sie zeitgleich ankommen. Bleibt eine Rest-Sekundenlücke, steht eine kurze Wartezeit im Plan."
+    :"Alle Flotten fliegen mit voller Geschwindigkeit. Die schnelleren starten einfach später – dafür siehst du die genauen Absendezeiten.";
+}
+
+load();
+$("target").value=S.target;$("inVal").value=S.inVal;$("atVal").value=S.atVal;
+syncModeUI();drawSpeeds();drawFleets();drawPlan();
+setInterval(tick,500);
+
+// für Tests
+window.__fs={parseCoord,distance,planSync,parseHMS};
+})();
+</script>
+</body>
+</html>
