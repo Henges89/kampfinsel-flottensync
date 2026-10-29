@@ -16,6 +16,6 @@ Alles läuft lokal im Browser; es werden keine Daten gesendet. Einstellungen wer
 ## Entfernungsformel
 Alle Ozeane liegen auf einer gemeinsamen Ebene (Ozeannummer = Reihe·10 + Spalte):
 `X = 2·(Gitter + 10·Reihe)`, `Y = 0,4·(Insel + 50·Spalte)`, Entfernung = √(ΔX² + ΔY²); Reisezeit = Entfernung ÷ Geschwindigkeit.
-Geprüft an über 680 Spiel-Entfernungen und Flugzeiten (max. Abweichung 0,05 sm). Die Drosselung (50–100 %) ist als umgekehrt proportionale Flugzeit angenommen.
+Geprüft an über 680 Spiel-Entfernungen und Reisezeiten (max. Abweichung 0,05 sm). Die Drosselung (50–100 %) ist als umgekehrt proportionale Reisezeit angenommen.
 
 Inoffizielles Fan-Tool, nicht mit Kampfinsel verbunden.

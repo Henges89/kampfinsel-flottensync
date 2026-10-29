@@ -54,7 +54,7 @@ input.bad{border-color:var(--bad)}
 .btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
 .btns{display:flex;gap:8px;flex-wrap:wrap}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;max-width:520px}
-.seg label{margin:0;cursor:pointer;flex:1}
+.seg label{margin:0;cursor:pointer;flex:1 1 auto}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 .seg span{display:flex;align-items:center;justify-content:center;text-align:center;height:100%;padding:8px 10px;font-size:14px;color:var(--ink);border-right:1px solid var(--line);min-height:42px;line-height:1.2}
 .seg label:last-child span{border-right:0}
@@ -126,7 +126,7 @@ footer code{background:var(--card);padding:1px 5px;border-radius:5px;border:1px 
       <div>
         <label>Wann sollen alle ankommen?</label>
         <div class="seg" role="radiogroup" aria-label="Ankunftsmodus">
-          <label><input type="radio" name="mode" value="earliest"><span>So früh wie möglich</span></label>
+          <label><input type="radio" name="mode" value="earliest"><span>Frühestmöglich</span></label>
           <label><input type="radio" name="mode" value="in"><span>In …</span></label>
           <label><input type="radio" name="mode" value="at"><span>Um Uhrzeit</span></label>
         </div>
@@ -159,8 +159,8 @@ footer code{background:var(--card);padding:1px 5px;border-radius:5px;border:1px 
   <footer>
     Entfernung: alle Ozeane liegen auf einer gemeinsamen Ebene –
     <code>X = 2·(Gitter + 10·Reihe)</code>, <code>Y = 0,4·(Insel + 50·Spalte)</code>, Entfernung = √(ΔX² + ΔY²)
-    (Ozeannummer = Reihe·10 + Spalte). Geprüft an über 680 Spiel-Entfernungen und Flugzeiten (max. Abweichung 0,05 sm);
-    Reisezeit = Entfernung ÷ Geschwindigkeit. Gedrosselte Flüge nehmen eine zur Geschwindigkeit umgekehrt proportionale
+    (Ozeannummer = Reihe·10 + Spalte). Geprüft an über 680 Spiel-Entfernungen und Reisezeiten (max. Abweichung 0,05 sm);
+    Reisezeit = Entfernung ÷ Geschwindigkeit. Gedrosselte Fahrten nehmen eine zur Geschwindigkeit umgekehrt proportionale
     Dauer an (Regler im Spiel: 50–100 %). Zeitangaben nach deiner lokalen Uhr – prüfe vor dem Absenden die Laufzeit im Spiel.
   </footer>
 </div>
@@ -331,7 +331,7 @@ function updateFleetInfo(){
     el.querySelector('[data-role="offErr"]').textContent=e.offErr;
     el.querySelector('[data-k="offset"]').classList.toggle("bad",!!e.offErr);
     const info=el.querySelector('[data-role="info"]');
-    if(isFinite(e.base))info.innerHTML=`<b>${fmt1(e.dist)} sm</b> · Flugzeit bei 100 %: <b>${fmtDur(e.base)}</b>`
+    if(isFinite(e.base))info.innerHTML=`<b>${fmt1(e.dist)} sm</b> · Reisezeit bei 100 %: <b>${fmtDur(e.base)}</b>`
       +(e.dist===0?" (Start und Ziel sind identisch)":"");
     else if(!(e.speed>0))info.textContent="Geschwindigkeit eintragen.";
     else info.textContent=(S.target.trim()&&!tgt.err)?"Startinsel eintragen.":"Zuerst das Ziel eintragen.";
@@ -394,7 +394,7 @@ function drawPlan(){
       <div class="plan-cols">
         <div><small>Absenden um</small><span class="big mono">${fmtClock(launch)}</span></div>
         <div><small>Countdown</small><span class="big mono cd" data-cd></span></div>
-        <div><small>Flugzeit</small><span class="big mono">${fmtDur(r.dur)}</span></div>
+        <div><small>Reisezeit</small><span class="big mono">${fmtDur(r.dur)}</span></div>
         <div><small>Ankunft</small><span class="big mono">${fmtClock(anchor+r.Ti*1000)}</span>${r.off?`<small>${r.off>0?"+":""}${fmtNum(r.off)} s zur Hauptankunft</small>`:""}</div>
       </div>
       <div class="bar" aria-hidden="true">
@@ -403,7 +403,7 @@ function drawPlan(){
     </div>`;
   });
   html+=`<div class="btns"><button class="btn primary" id="recalc">Neu berechnen</button><button class="btn" id="copy">Plan kopieren</button></div>`;
-  if(anyLate)html+=`<p class="hint late">Mindestens eine Flotte erreicht die gewählte Ankunft nicht. Wähle „So früh wie möglich“ oder eine spätere Zeit.</p>`;
+  if(anyLate)html+=`<p class="hint late">Mindestens eine Flotte erreicht die gewählte Ankunft nicht. Wähle „Frühestmöglich“ oder eine spätere Zeit.</p>`;
   el.innerHTML=html;
   $("recalc").onclick=()=>{anchor=Date.now();drawPlan();tick();};
   $("copy").onclick=copyPlan;
@@ -425,7 +425,7 @@ function copyPlan(){
   const lines=["Flottensync → "+S.target.trim()+" · Hauptankunft "+fmtClock(arrive)+fmtDay(arrive,anchor)];
   lastPlan.rows.forEach(r=>{
     if(r.status!=="ok")return;
-    lines.push("• "+r.name+" (Ankunft "+fmtClock(anchor+r.Ti*1000)+"): absenden "+fmtClock(anchor+r.delay*1000)+" mit "+Math.round(r.pct*100)+" % (Flug "+fmtDur(r.dur)+")");
+    lines.push("• "+r.name+" (Ankunft "+fmtClock(anchor+r.Ti*1000)+"): absenden "+fmtClock(anchor+r.delay*1000)+" mit "+Math.round(r.pct*100)+" % (Reise "+fmtDur(r.dur)+")");
   });
   const txt=lines.join("\n");
   const b=$("copy");
@@ -494,7 +494,7 @@ function syncModeUI(){
   $("modeAt").style.display=S.mode==="at"?"":"none";
   $("methodHint").textContent=S.method==="throttle"
     ?"Alle Flotten starten (fast) sofort; schnellere Flotten werden im Spiel am Geschwindigkeitsregler (50–100 %) gebremst, bis sie zeitgleich ankommen. Bleibt eine Rest-Sekundenlücke, steht eine kurze Wartezeit im Plan."
-    :"Alle Flotten fliegen mit voller Geschwindigkeit. Die schnelleren starten einfach später – dafür siehst du die genauen Absendezeiten.";
+    :"Alle Flotten fahren mit voller Geschwindigkeit. Die schnelleren starten einfach später – dafür siehst du die genauen Absendezeiten.";
 }
 
 load();
