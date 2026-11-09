@@ -225,6 +225,7 @@ function planSync(fleets,opts){
     const off=f.off||0,Ti=T+off;
     if(f.base>Ti+0.5)return{...f,status:"toolate",pct:1,delay:0,dur:f.base,short:f.base-Ti,Ti};
     let pct=1,delay=Ti-f.base;
+    if(f.fixed)return{...f,status:"ok",pct:f.pct0,delay:Math.max(0,Ti-f.base),dur:f.base,Ti};
     if(opts.method==="throttle"){
       pct=Math.min(1,Math.max(0.5,Math.ceil(f.base/Ti*100-1e-9)/100)); // Regler: ganze Prozent, aufrunden
       delay=Ti-f.base/pct;
@@ -255,7 +256,8 @@ function load(){
   S.fleets.forEach(f=>{f.id=nextId++;});
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
-function newFleet(){return{id:nextId++,name:"",start:"",ship:"Großes Kriegsschiff",custom:12,offset:""};}
+function newFleet(){return{id:nextId++,name:"",start:"",ship:"Großes Kriegsschiff",custom:12,offset:"",pct:100};}
+const fleetPct=f=>Math.min(100,Math.max(50,parseFloat(f.pct)||100))/100;
 function fleetName(f,i){return f.name.trim()||("Flotte "+(i+1));}
 function fleetSpeed(f){return f.ship==="__custom"?+f.custom:+S.speeds[f.ship];}
 
@@ -289,6 +291,14 @@ function drawFleets(){
         </div>
       </div>
       <div class="offset">
+        <label>Geschwindigkeit (wie im Flottenmenü)</label>
+        <div class="btns" style="flex-wrap:nowrap;align-items:center">
+          <input type="range" data-k="pct" min="50" max="100" step="1" value="${fleetPct(f)*100}" aria-label="Geschwindigkeit in Prozent" style="flex:1;min-width:0">
+          <input type="number" data-k="pct" min="50" max="100" step="1" value="${f.pct==null?100:esc(f.pct)}" inputmode="numeric" style="max-width:80px"><span>%</span>
+        </div>
+        <div class="hint" style="margin-top:4px">100 % = Plan drosselt selbst. Weniger = feste Geschwindigkeit, dann nur noch die Absendezeit.</div>
+      </div>
+      <div class="offset">
         <label>Ankunft relativ zu den anderen (Sekunden)</label>
         <div class="btns" style="flex-wrap:nowrap">
           <input type="text" data-k="offset" value="${esc(f.offset||"")}" placeholder="0" inputmode="numeric" autocomplete="off" style="max-width:130px">
@@ -315,6 +325,7 @@ function evalFleets(){
       out.dist=distance(st,tgt);
       out.base=out.dist/speed*3600;
       if(f.ship==="Kolonisierungsschiff")out.base=Math.max(out.base,3600); // Kolo-Schiff braucht immer mind. 60 min
+      out.pct0=fleetPct(f);out.fixed=out.pct0<1;out.base100=out.base;out.base/=out.pct0;
     } else out.base=NaN;
     return out;
   });
@@ -332,7 +343,7 @@ function updateFleetInfo(){
     el.querySelector('[data-role="offErr"]').textContent=e.offErr;
     el.querySelector('[data-k="offset"]').classList.toggle("bad",!!e.offErr);
     const info=el.querySelector('[data-role="info"]');
-    if(isFinite(e.base))info.innerHTML=`<b>${fmt1(e.dist)} sm</b> · Reisezeit bei 100 %: <b>${fmtDur(e.base)}</b>`
+    if(isFinite(e.base))info.innerHTML=`<b>${fmt1(e.dist)} sm</b> · Reisezeit bei ${Math.round(e.pct0*100)} %: <b>${fmtDur(e.base)}</b>`
       +(e.dist===0?" (Start und Ziel sind identisch)":"");
     else if(!(e.speed>0))info.textContent="Geschwindigkeit eintragen.";
     else info.textContent=(S.target.trim()&&!tgt.err)?"Startinsel eintragen.":"Zuerst das Ziel eintragen.";
@@ -384,7 +395,7 @@ function drawPlan(){
     }
     if(r.status==="toolate"){
       html+=`<div class="plan-item"><div class="plan-head"><span class="plan-name">${esc(r.name)}</span><span class="tag warn">schafft es nicht</span></div>
-        <div class="hint late">Selbst mit 100 % braucht diese Flotte ${fmtDur(r.base)} – das sind ${fmtDur(r.short)} zu viel für die gewählte Ankunft.</div></div>`;return;
+        <div class="hint late">Selbst mit ${Math.round((r.pct0||1)*100)} % braucht diese Flotte ${fmtDur(r.base)} – das sind ${fmtDur(r.short)} zu viel für die gewählte Ankunft.</div></div>`;return;
     }
     const launch=anchor+r.delay*1000;
     const delayPct=r.delay/maxWait*100,durPct=r.dur/maxWait*100;
@@ -458,6 +469,7 @@ $("fleets").addEventListener("input",e=>{
   if(!f||!k)return;
   if(k==="custom")f.custom=parseFloat(e.target.value)||0;
   else f[k]=e.target.value;
+  if(k==="pct"){card.querySelectorAll('[data-k="pct"]').forEach(x=>{if(x!==e.target)x.value=x.type==="range"?fleetPct(f)*100:e.target.value;});}
   if(k==="ship"){drawFleetsKeepFocus(card,e.target);}
   refreshAll(false);
 });
