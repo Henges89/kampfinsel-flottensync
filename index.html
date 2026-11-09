@@ -297,6 +297,7 @@ function drawFleets(){
           <input type="number" data-k="pct" min="50" max="100" step="1" value="${f.pct==null?100:esc(f.pct)}" inputmode="numeric" style="max-width:80px"><span>%</span>
         </div>
         <div class="hint" style="margin-top:4px">100 % = Plan drosselt selbst. Weniger = feste Geschwindigkeit, dann nur noch die Absendezeit.</div>
+        <div class="err" data-role="pctErr"></div>
       </div>
       <div class="offset">
         <label>Ankunft relativ zu den anderen (Sekunden)</label>
@@ -320,7 +321,7 @@ function evalFleets(){
     const st=f.start.trim()?parseCoord(f.start):{err:""};
     const speed=fleetSpeed(f);
     const off=parseOffset(f.offset);
-    const out={id:f.id,name:fleetName(f,i),startErr:st.err||"",speed,off:off==null?0:off,offErr:off==null?"Zahl in Sekunden, z. B. -5 oder 5":""};
+    const out={id:f.id,name:fleetName(f,i),startErr:st.err||"",speed,off:off==null?0:off,pctErr:(v=>v>=50&&v<=100?"":"Geschwindigkeit muss zwischen 50 und 100 % liegen (gerechnet wird mit "+Math.round(fleetPct(f)*100)+" %).")(parseFloat(String(f.pct).replace(",","."))),offErr:off==null?"Zahl in Sekunden, z. B. -5 oder 5":""};
     if(!tgt.err&&!st.err&&speed>0){
       out.dist=distance(st,tgt);
       out.base=out.dist/speed*3600;
@@ -341,6 +342,8 @@ function updateFleetInfo(){
     el.querySelector('[data-role="startErr"]').textContent=e.startErr;
     startEl.classList.toggle("bad",!!e.startErr);
     el.querySelector('[data-role="offErr"]').textContent=e.offErr;
+    el.querySelector('[data-role="pctErr"]').textContent=e.pctErr;
+    el.querySelector('input[type=number][data-k="pct"]').classList.toggle("bad",!!e.pctErr);
     el.querySelector('[data-k="offset"]').classList.toggle("bad",!!e.offErr);
     const info=el.querySelector('[data-role="info"]');
     if(isFinite(e.base))info.innerHTML=`<b>${fmt1(e.dist)} sm</b> · Reisezeit bei ${Math.round(e.pct0*100)} %: <b>${fmtDur(e.base)}</b>`
